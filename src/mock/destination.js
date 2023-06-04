@@ -13,7 +13,7 @@ export const generateDestination = (id) => ({
   description: 'something something',
   name: names[generateRandomInt(0, names.length - 1)],
   pictures:
-    Array.from({length: generateRandomInt(2, 10)}, generatePicture)
+    Array.from({length: generateRandomInt(2, 5)}, generatePicture)
 });
 
 
