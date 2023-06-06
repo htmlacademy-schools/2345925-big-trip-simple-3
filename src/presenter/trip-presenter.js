@@ -3,12 +3,13 @@ import TripEventsListView from '../view/trip-events-list-view.js';
 import TripEventsSortingView from '../view/trip-events-sorting-view.js';
 import TripEventsFormView from '../view/trip-events-form-view.js';
 import TripEvent from '../view/trip-event-view.js';
+import NoPointsView from '../view/no-points-view';
 
 class TripPresenter {
   #tripContainer = null;
   #tripPointsModel = null;
   #tripEventsListComponent = new TripEventsListView();
-
+  #tripEmptyListMessage = new NoPointsView();
   #tripPoints = [];
 
   constructor(container, tripPointsModel) {
@@ -62,6 +63,9 @@ class TripPresenter {
     render(this.#tripEventsListComponent, this.#tripContainer);
     for (let i = 0; i < this.#tripPoints.length; i++) {
       this.#renderTripPoint(this.#tripPoints[i]);
+    }
+    if(this.#tripPoints.length === 0){
+      render(this.#tripEmptyListMessage, this.#tripContainer);
     }
   }
 }
