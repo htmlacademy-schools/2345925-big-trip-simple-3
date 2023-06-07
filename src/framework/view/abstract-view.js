@@ -49,6 +49,21 @@ export default class AbstractView {
     this.#element = null;
   }
 
+  addEventListener(selector, event, callback) {
+    if (!this._callback[event]) {
+      this._callback[event] = {};
+    }
+
+    this._callback[event][selector] = callback;
+
+    this.element.querySelector(selector).addEventListener(event, this._callback[event][selector]);
+  }
+
+  removeEventListener(selector, event) {
+    this._callback[event][selector] = null;
+    this.element.querySelector(selector).removeEventListener(event, this._callback[event][selector]);
+  }
+
   /**
    * Метод, реализующий эффект "покачивания головой"
    * @param {shakeCallback} [callback] Функция, которая будет вызвана после завершения анимации

@@ -1,7 +1,7 @@
-import BaseView from './base-view.js';
 import {getRandomOffers} from '../mock/offer';
 import {convertToDateTime, convertToEventDate, convertToEventDateTime, convertToTime} from '../utils/converters';
 import {randomDestinations} from '../mock/destination';
+import AbstractView from '../framework/view/abstract-view';
 
 const createOffersTemplate = (offers) => offers.map((offer) => `
     <li class="event__offer">
@@ -51,7 +51,7 @@ const createTripEventTemplate = (point) => {
     </div>
   </li>`;
 };
-class TripEventView extends BaseView {
+class TripEventView extends AbstractView {
   constructor({tripPoint}) {
     super();
     this.tripPoint = tripPoint;
