@@ -11,3 +11,15 @@ export const convertToTime = (date) => dayjs(date).format(TIME_FORMAT);
 export const convertToUpperCase = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 export const convertToFormDate = (date) => dayjs(date).format(FORM_DATE_FORMAT);
 export const isDateValid = (date) => dayjs(date).isBefore(dayjs(), 'D') || dayjs(date).isSame(dayjs(), 'D');
+export const compareDates = (a, b) => dayjs(a).toDate() - dayjs(b).toDate();
+
+export const compareTime = (a, b) => {
+  const aDate = dayjs(a);
+  const bDate = dayjs(b);
+
+  if (aDate.hour() > bDate.hour()) {
+    return bDate.hour() - aDate.hour();
+  }
+
+  return aDate.minute() - bDate.minute();
+};

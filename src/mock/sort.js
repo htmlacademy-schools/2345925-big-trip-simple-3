@@ -1,11 +1,4 @@
-const SortType = {
-  DAY: 'day',
-  EVENT: 'event',
-  TIME: 'time',
-  PRICE: 'price',
-  OFFERS: 'offers'
-};
-
+import {SortType} from '../utils/trip-points';
 const sorts = {
   [SortType.DAY]: () => (0),
   [SortType.EVENT]: () => (0),
