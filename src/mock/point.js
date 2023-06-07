@@ -6,7 +6,7 @@ export const generateRandomType = () => POINT_TYPES[generateRandomInt(0, POINT_T
 
 export const generateRandomPoint = () => ({
   'basePrice': generateRandomInt(300, 6666),
-  'id': generateRandomInt(0, 3),
+  'id': generateRandomInt(0, 100),
   'dateFrom': generateRandomDate(),
   'dateTo': generateRandomDate(),
   'destination': generateRandomInt(0, 9),

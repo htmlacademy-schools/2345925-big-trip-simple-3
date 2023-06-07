@@ -28,8 +28,7 @@ export class PointPresenter {
   #closeEditFormOnEscapeKey(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      this.#replacePointToForm();
-      document.body.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
+      this.#replaceFormToPoint();
     }
   }
 
@@ -63,18 +62,15 @@ export class PointPresenter {
 
     this.#tripPointComponent.addEventListener('.event__rollup-btn', 'click', () => {
       this.#replacePointToForm();
-      document.body.addEventListener('keydown', this.#closeEditFormOnEscapeKey);
     });
 
     this.#tripPointFormComponent.addEventListener('.event__save-btn', 'click', (evt) => {
       evt.preventDefault();
       this.#replaceFormToPoint();
-      document.body.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
     });
 
     this.#tripPointFormComponent.addEventListener('.event__reset-btn','click', () => {
       this.#replaceFormToPoint();
-      document.body.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
     });
 
     if (prevTripPointComponent === null || prevTripPointFormComponent === null) {
