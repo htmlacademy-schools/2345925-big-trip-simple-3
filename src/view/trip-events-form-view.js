@@ -1,5 +1,8 @@
-import {convertToFormDate, convertToTime, convertToUpperCase} from '../utils/converters';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
+import {convertToFormDate} from '../utils/converters';
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
+import {convertToUpperCase} from '../utils/converters';
 import {EventType} from '../utils/const';
 
 const BLANK_TRIPEVENT = {
@@ -15,6 +18,13 @@ const BLANK_TRIPEVENT = {
 const createPhotosTemplate = (photos) => photos.map((photo) => `<img class="event__photo" src="${photo.src}" alt="${photo.description}">`).join('');
 
 const createDestinationsDataList = (destinations) => destinations.map((e) => `<option value=${e.name}></option>`).join('');
+
+const getTitle = (isEditForm, isDeleting) => {
+  if (!isEditForm) {
+    return 'Cancel';
+  }
+  return (isDeleting) ? 'Deleting...' : 'Delete';
+};
 
 const createEventTypeListItem = (id, type, checked = false) => `
            <div class="event__type-item">
@@ -42,16 +52,17 @@ const createEventOffersList = (id, selectedIds, offers) => `<section class="even
         <h3 class="event__section-title  event__section-title--offers">Offers</h3>
 
         <div class="event__available-offers">
-        ${offers.map((offer, i) => createEventOfferSelector(id, offer, i in selectedIds))}
+        ${offers.map((offer) => createEventOfferSelector(id, offer, selectedIds.includes(offer.id))).join('')}
         </div>
       </section>`;
 
 
-const createTripEventsFormTemplate = (eventPoint = {}, destinations, offers) => {
-
+const createTripEventsFormTemplate = (eventPoint = {}, destinations, offers, isEditForm) => {
   const {type, id} = eventPoint;
   const destination = destinations.find((d) => d.id === eventPoint.destination);
   const destinationsDataList = createDestinationsDataList(destinations);
+  const currentTypeOffers = offers.find((o) => o.type === type);
+  const offersArray = currentTypeOffers ? currentTypeOffers.offers : [];
 
   return `
   <form class="event event--edit" action="#" method="post">
@@ -77,10 +88,10 @@ const createTripEventsFormTemplate = (eventPoint = {}, destinations, offers) => 
 
       <div class="event__field-group  event__field-group--time">
         <label class="visually-hidden" for="event-start-time-${id}">From</label>
-        <input class="event__input  event__input--time" id="event-start-time-${id}" type="text" name="event-start-time" value="${convertToFormDate(eventPoint.date_from)} ${convertToTime(eventPoint.date_from)}">
+        <input class="event__input  event__input--time" id="event-start-time-${id}" type="text" name="event-start-time" value="${convertToFormDate(eventPoint.date_from)}">
         &mdash;
         <label class="visually-hidden" for="event-end-time-${id}">To</label>
-        <input class="event__input  event__input--time" id="event-end-time-${id}" type="text" name="event-end-time" value="${convertToFormDate(eventPoint.date_to)} ${convertToTime(eventPoint.date_to)}">
+        <input class="event__input  event__input--time" id="event-end-time-${id}" type="text" name="event-end-time" value="${convertToFormDate(eventPoint.date_to)}">
       </div>
 
       <div class="event__field-group  event__field-group--price">
@@ -91,14 +102,18 @@ const createTripEventsFormTemplate = (eventPoint = {}, destinations, offers) => 
         <input class="event__input  event__input--price" id="event-price-${id}" type="text" name="event-price" value="${eventPoint.basePrice}">
       </div>
 
-      <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-      <button class="event__reset-btn" type="reset">Cancel</button>
+      <button class="event__save-btn  btn  btn--blue" type="submit"${(eventPoint.isDisabled) ? 'disabled' : ''}>${(eventPoint.isSaving) ? 'Saving...' : 'Save'}</button>
+      <button class="event__reset-btn" type="reset" ${(eventPoint.isDisabled) ? 'disabled' : ''}>${getTitle(isEditForm, eventPoint.isDeleting)}</button>
+      ${isEditForm ? `
+         <button class="event__rollup-btn" type="button">
+            <span class="visually-hidden">Close event</span>
+         </button>` : ''}
     </header>
     <section class="event__details">
        ${createEventOffersList(
     id,
     eventPoint.offersIDs,
-    offers.find((o) => o.type === type).offers
+    offersArray
   )}
 
       <section class="event__section  event__section--destination">
@@ -120,10 +135,13 @@ class TripEventFormView extends AbstractStatefulView {
   #destinations;
 
   #isEditForm;
+
+  #fromDatepicker;
+  #toDatepicker;
   constructor({
     tripEvent = BLANK_TRIPEVENT,
     onSave,
-    onReset,
+    onReset = () => 0,
     onDelete,
     isEditForm = true,
     offers,
@@ -144,30 +162,44 @@ class TripEventFormView extends AbstractStatefulView {
   }
 
   get template() {
-    return createTripEventsFormTemplate(this._state, this.#destinations, this.#offers);
+    if (!this.#destinations) {
+      return '';
+    }
+    return createTripEventsFormTemplate(this._state, this.#destinations, this.#offers, this.#isEditForm);
   }
 
   static parseTripEventToState(tripEvent, offers) {
+    const currentTypeOffers = offers.find((el) => el.type === tripEvent.type);
     return {...tripEvent,
-      currentTypeOffers: offers.find((el) => el.type === tripEvent.type).offers
+      currentTypeOffers: currentTypeOffers ? currentTypeOffers.offers : [],
+      isDisabled: false,
+      isSaving: false,
+      isDeleting: false,
     };
   }
 
   static parseStateToTripEvent(state) {
-    const trip = {...state};
+    const tripEvent = {...state};
 
-    delete trip.currentTypeOffers;
-    return trip;
+    delete tripEvent.currentTypeOffers;
+    delete tripEvent.isDisabled;
+    delete tripEvent.isSaving;
+    delete tripEvent.isDeleting;
+    return tripEvent;
   }
 
   _restoreHandlers() {
     this.element.addEventListener('submit', this.#saveHandler);
-    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#resetHandler);
     this.element.querySelector('.event__type-group').addEventListener('change', this.#eventTypeHandler);
     this.element.querySelector('.event__input--destination').addEventListener('change', this.#destinationHandler);
     this.element.querySelector('.event__input--price').addEventListener('input', this.#priceInputHandler);
-    this.element.querySelector('.event__available-offers')
-      .addEventListener('change', this.#offersHandler);
+    this.element.querySelector('.event__available-offers').addEventListener('change', this.#offersHandler);
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#deleteHandler);
+    if (this.#isEditForm) {
+      this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#resetHandler);
+    }
+    this.#setFromDatePicker();
+    this.#setToDatePicker();
   }
 
   reset = (tripEvent) => {
@@ -175,6 +207,20 @@ class TripEventFormView extends AbstractStatefulView {
       TripEventFormView.parseTripEventToState(tripEvent, this.#offers)
     );
   };
+
+  removeElement() {
+    super.removeElement();
+
+    if (this.#fromDatepicker) {
+      this.#fromDatepicker.destroy();
+      this.#fromDatepicker = null;
+    }
+
+    if (this.#toDatepicker) {
+      this.#toDatepicker.destroy();
+      this.#toDatepicker = null;
+    }
+  }
 
   #offersHandler = (evt) => {
     evt.preventDefault();
@@ -191,7 +237,6 @@ class TripEventFormView extends AbstractStatefulView {
   };
 
   #eventTypeHandler = (evt) => {
-    console.log('event')
     evt.preventDefault();
     this.updateElement({
       type: evt.target.value,
@@ -214,6 +259,15 @@ class TripEventFormView extends AbstractStatefulView {
     });
   };
 
+  #deleteHandler = (e) => {
+    if (!this.#isEditForm) {
+      this.#resetHandler(e);
+      return;
+    }
+    e.preventDefault();
+    this._callback.onDelete(TripEventFormView.parseStateToTripEvent(this._state));
+  };
+
   #saveHandler = (event) => {
     event.preventDefault();
     this._callback.onSave(TripEventFormView.parseStateToTripEvent(this._state));
@@ -223,6 +277,49 @@ class TripEventFormView extends AbstractStatefulView {
     event.preventDefault();
     this._callback.onReset();
   };
+
+  #fromDateChangeHandler = ([userDate]) => {
+    if (userDate) {
+      this._setState({
+        dateFrom: userDate.toISOString(),
+      });
+      this.#toDatepicker.set('minDate', userDate);
+    }
+  };
+
+
+  #toDateChangeHandler = ([userDate]) => {
+    if (userDate) {
+      this._setState({
+        dateTo: userDate.toISOString(),
+      });
+    }
+  };
+
+  #setFromDatePicker() {
+    this.#fromDatepicker = flatpickr(
+      this.element.querySelector(`#event-start-time-${this._state.id}`),
+      {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: convertToFormDate(this._state.dateFrom),
+        onChange: this.#fromDateChangeHandler,
+      },
+    );
+  }
+
+  #setToDatePicker() {
+    this.#toDatepicker = flatpickr(
+      this.element.querySelector(`#event-end-time-${this._state.id}`),
+      {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: convertToFormDate(this._state.dateTo),
+        minDate: convertToFormDate(this._state.dateFrom),
+        onChange: this.#toDateChangeHandler,
+      },
+    );
+  }
 }
 
 export default TripEventFormView;

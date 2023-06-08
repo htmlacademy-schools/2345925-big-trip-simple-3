@@ -41,60 +41,47 @@ export class TripEventPresenter {
     this.#onDataChange = onDataChange;
   }
 
-  #replaceFormToEvent() {
-    replace(this.#tripEventComponent, this.#tripEventFormComponent);
-    document.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
-    this.#mode = Mode.DEFAULT;
-  }
-
-  #closeEditFormOnEscapeKey(event) {
+  #closeEditFormOnEscapeKey = (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      try {
-        this.#replaceFormToEvent();
-      } catch (Error) { /* empty */ }
+      this.#replaceFormToEvent();
     }
-  }
+  };
 
-  #replacePointToForm() {
+  #replacePointToForm = () => {
     replace(this.#tripEventFormComponent, this.#tripEventComponent);
     document.addEventListener('keydown', this.#closeEditFormOnEscapeKey);
     this.#handleModeChange();
     this.#mode = Mode.EDITING;
-
-  }
-
-  #handleSave = (update) => {
-    const isMinorUpdate = !compareDates(this.#tripEvent.dateFrom, update.dateFrom) === 0 || this.#tripEvent.basePrice !== update.basePrice;
-    this.#onDataChange(
-      UserAction.UPDATE_EVENT,
-      isMinorUpdate ? UpdateType.MINOR : UpdateType.PATCH,
-      update,
-    );
-    // document.body.removeEventListener('keydown', this.#ecsKeydown);
   };
 
-  setSaving() {
+  #replaceFormToEvent = () => {
+    replace(this.#tripEventComponent, this.#tripEventFormComponent);
+    document.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
+    this.#mode = Mode.DEFAULT;
+  };
+
+  setSaving = () => {
     if (this.#mode === Mode.EDITING) {
       this.#tripEventFormComponent.updateElement({
         isDisabled: true,
         isSaving: true,
       });
     }
-  }
+  };
 
-  setDeleting() {
+  setDeleting = () => {
     if (this.#mode === Mode.EDITING) {
-      this.#tripEventComponent.updateElement({
+      this.#tripEventFormComponent.updateElement({
         isDisabled: true,
         isDeleting: true,
       });
     }
-  }
+  };
 
-  setAborting() {
+  setAborting = () => {
     if (this.#mode === Mode.DEFAULT) {
-      this.#tripEventComponent.shake();
+      this.#tripEventFormComponent.shake();
       return;
     }
 
@@ -107,10 +94,10 @@ export class TripEventPresenter {
     };
 
     this.#tripEventFormComponent.shake(resetFormState);
-  }
+  };
 
 
-  init(tripEvent = this.#tripEvent, destinations = this.#destinations, offers = this.#offers) {
+  init = (tripEvent = this.#tripEvent, destinations = this.#destinations, offers = this.#offers) => {
     const prevTripEventComponent = this.#tripEventComponent;
     const prevTripEventFormComponent = this.#tripEventFormComponent;
 
@@ -120,10 +107,12 @@ export class TripEventPresenter {
       offers: offers,
       onSave: (update) => {
         this.#handleSave(update);
-        this.#replaceFormToEvent();
       },
       onReset: () => {
         this.#replaceFormToEvent();
+      },
+      onDelete: (update) => {
+        this.#handleDeleteClick(update);
       }
     });
 
@@ -133,7 +122,6 @@ export class TripEventPresenter {
       offers: offers,
       onRollupClick: () => {
         this.#replacePointToForm();
-        this.#tripEventFormComponent.reset(this.#tripEvent);
       }
     });
 
@@ -148,22 +136,40 @@ export class TripEventPresenter {
     }
 
     if (this.#mode === Mode.EDITING) {
-      replace(this.#tripEventFormComponent, prevTripEventFormComponent);
+      replace(this.#tripEventComponent, prevTripEventFormComponent);
       this.#mode = Mode.DEFAULT;
     }
 
     remove(prevTripEventComponent);
     remove(prevTripEventFormComponent);
-  }
+  };
 
-  destroy() {
+  destroy = () => {
     remove(this.#tripEventComponent);
     remove(this.#tripEventFormComponent);
-  }
+  };
 
-  resetView() {
+  resetView = () => {
     if (this.#mode !== Mode.DEFAULT) {
+      this.#tripEventFormComponent.reset(this.#tripEvent, this.#offers);
       this.#replaceFormToEvent();
     }
-  }
+  };
+
+  #handleSave = (update) => {
+    const isMinorUpdate = compareDates(this.#tripEvent.dateFrom, update.dateFrom) !== 0 || this.#tripEvent.basePrice !== update.basePrice;
+    this.#onDataChange(
+      UserAction.UPDATE_EVENT,
+      isMinorUpdate ? UpdateType.MINOR : UpdateType.PATCH,
+      update,
+    );
+  };
+
+  #handleDeleteClick = (update) => {
+    this.#onDataChange(
+      UserAction.DELETE_EVENT,
+      UpdateType.MINOR,
+      update,
+    );
+  };
 }
