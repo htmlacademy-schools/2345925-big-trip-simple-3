@@ -1,103 +1,166 @@
-import TripEventsFormView from '../view/trip-events-form-view';
+import TripEventFormView from '../view/trip-events-form-view';
 import TripEvent from '../view/trip-event-view';
 import {remove, render, replace} from '../framework/render';
+import {UpdateType, UserAction} from '../utils/const';
+import {compareDates} from '../utils/converters';
 
 const Mode = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
 };
 
-export class PointPresenter {
-  #container = null;
-  #tripPoint = null;
+export class TripEventPresenter {
+  #container;
+  #tripEvent;
+  #destinations;
+  #offers;
 
-  #tripPointFormComponent = null;
+  #tripEventFormComponent;
 
-  #tripPointComponent = null;
+  #tripEventComponent;
 
-  #handleChange = null;
+  #handleModeChange;
+  #onDataChange;
 
   #mode = Mode.DEFAULT;
 
-  constructor(container, tripPoint, {handleChange}) {
-    this.#tripPoint = tripPoint;
+
+  constructor({
+    container,
+    tripEvent,
+    handleModeChange,
+    destinations,
+    offers,
+    onDataChange
+  }) {
+    this.#tripEvent = tripEvent;
     this.#container = container;
-    this.#handleChange = handleChange;
+    this.#handleModeChange = handleModeChange;
+    this.#destinations = destinations;
+    this.#offers = offers;
+    this.#onDataChange = onDataChange;
   }
 
   #closeEditFormOnEscapeKey(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      this.#replaceFormToPoint();
+      this.#replaceFormToEvent();
     }
   }
 
   #replacePointToForm() {
-    replace(this.#tripPointFormComponent, this.#tripPointComponent);
+    replace(this.#tripEventFormComponent, this.#tripEventComponent);
     document.addEventListener('keydown', this.#closeEditFormOnEscapeKey);
-    if(this.#handleChange !== null || typeof this.#handleChange !== 'undefined') {
-      this.#handleChange();
-    }
+    this.#handleModeChange();
     this.#mode = Mode.EDITING;
   }
 
-  #replaceFormToPoint() {
-    replace(this.#tripPointComponent, this.#tripPointFormComponent);
+  #replaceFormToEvent() {
+    replace(this.#tripEventComponent, this.#tripEventFormComponent);
     document.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
     this.#mode = Mode.DEFAULT;
   }
 
+  #handleSave = (update) => {
+    const isMinorUpdate = !compareDates(this.#tripEvent.dateFrom, update.dateFrom) === 0 || this.#tripEvent.basePrice !== update.basePrice;
+    this.#onDataChange(
+      UserAction.UPDATE_EVENT,
+      isMinorUpdate ? UpdateType.MINOR : UpdateType.PATCH,
+      update,
+    );
+    // document.body.removeEventListener('keydown', this.#ecsKeydown);
+  };
 
-  init() {
-    const prevTripPointComponent = this.#tripPointComponent;
-    const prevTripPointFormComponent = this.#tripPointFormComponent;
+  setSaving() {
+    if (this.#mode === Mode.EDITING) {
+      this.#tripEventFormComponent.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+    }
+  }
 
-    this.#tripPointFormComponent = new TripEventsFormView({
-      tripPoint: this.#tripPoint
+  setDeleting() {
+    if (this.#mode === Mode.EDITING) {
+      this.#tripEventComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
+    }
+  }
+
+  setAborting() {
+    if (this.#mode === Mode.DEFAULT) {
+      this.#tripEventComponent.shake();
+      return;
+    }
+
+    const resetFormState = () => {
+      this.#tripEventFormComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#tripEventFormComponent.shake(resetFormState);
+  }
+
+
+  init(tripEvent = this.#tripEvent, destinations = this.#destinations, offers = this.#offers) {
+    const prevTripEventComponent = this.#tripEventComponent;
+    const prevTripEventFormComponent = this.#tripEventFormComponent;
+
+    this.#tripEventFormComponent = new TripEventFormView({
+      tripEvent: tripEvent,
+      destinations: destinations,
+      offers: offers,
+      onSave: (update) => {
+        this.#handleSave(update);
+        this.#replaceFormToEvent();
+      },
+      onReset: () => {
+        this.#replaceFormToEvent();
+      }
     });
 
-    this.#tripPointComponent = new TripEvent({
-      tripPoint: this.#tripPoint
+    this.#tripEventComponent = new TripEvent({
+      tripEvent: tripEvent,
+      destinations: destinations,
+      offers: offers,
+      onRollupClick: () => {
+        this.#tripEventFormComponent.reset(this.#tripEvent);
+        this.#replacePointToForm();
+      }
     });
 
-    this.#tripPointComponent.addEventListener('.event__rollup-btn', 'click', () => {
-      this.#replacePointToForm();
-    });
 
-    this.#tripPointFormComponent.addEventListener('.event__save-btn', 'click', (evt) => {
-      evt.preventDefault();
-      this.#replaceFormToPoint();
-    });
-
-    this.#tripPointFormComponent.addEventListener('.event__reset-btn','click', () => {
-      this.#replaceFormToPoint();
-    });
-
-    if (prevTripPointComponent === null || prevTripPointFormComponent === null) {
-      render(this.#tripPointComponent, this.#container);
+    if (!prevTripEventComponent || !prevTripEventFormComponent) {
+      render(this.#tripEventComponent, this.#container);
       return;
     }
 
     if (this.#mode === Mode.DEFAULT) {
-      replace(this.#tripPointComponent, prevTripPointComponent);
+      replace(this.#tripEventComponent, prevTripEventComponent);
     }
 
     if (this.#mode === Mode.EDITING) {
-      replace(this.#tripPointFormComponent, prevTripPointFormComponent);
+      replace(this.#tripEventFormComponent, prevTripEventFormComponent);
+      this.#mode = Mode.DEFAULT;
     }
 
-    remove(prevTripPointComponent);
-    remove(prevTripPointFormComponent);
+    remove(prevTripEventComponent);
+    remove(prevTripEventFormComponent);
   }
 
   destroy() {
-    remove(this.#tripPointComponent);
-    remove(this.#tripPointFormComponent);
+    remove(this.#tripEventComponent);
+    remove(this.#tripEventFormComponent);
   }
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
-      this.#replaceFormToPoint();
+      this.#replaceFormToEvent();
     }
   }
 }

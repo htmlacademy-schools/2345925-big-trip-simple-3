@@ -1,7 +1,11 @@
-import {getRandomOffers} from '../mock/offer';
-import {convertToDateTime, convertToEventDate, convertToEventDateTime, convertToTime} from '../utils/converters';
-import {randomDestinations} from '../mock/destination';
+import {
+  convertToDateTime,
+  convertToEventDate,
+  convertToEventDateTime,
+  convertToTime
+} from '../utils/converters';
 import AbstractView from '../framework/view/abstract-view';
+
 
 const createOffersTemplate = (offers) => offers.map((offer) => `
     <li class="event__offer">
@@ -11,35 +15,38 @@ const createOffersTemplate = (offers) => offers.map((offer) => `
     </li>
   `).join('');
 
-const createTripEventTemplate = (point) => {
-  const {destination, offers, type} = point;
-  const offersArray = getRandomOffers()
-    .find((e) => (e.type === type))['offers']
-    .filter((e) => (e.id in offers));
-  const eventDate = convertToEventDate(point.dateFrom);
-  const eventStartDateTime = convertToEventDateTime(point.dateFrom);
-  const eventStartTime = convertToTime(point.dateFrom);
-  const eventEndDateTime = convertToDateTime(point.dateTo);
-  const eventEndTime = convertToTime(point.dateTo);
-  const eventPrice = point.basePrice;
+const createTripEventTemplate = (eventPoint, destinations, offers) => {
+  const {offersIDs, type} = eventPoint;
+
+  const destination = destinations.find((d) => d.id === eventPoint.destination);
+
+  const offersArray = offers
+    .find((e) => e.type === type)['offers']
+    .filter((e) => (e.id in offersIDs));
+  const eventDateTime = convertToEventDateTime(eventPoint.dateFrom);
+  const eventDate = convertToEventDate(eventPoint.dateFrom);
+  const fromDateTime = convertToDateTime(eventPoint.dateFrom);
+  const fromTime = convertToTime(eventPoint.dateFrom);
+  const toDateTime = convertToDateTime(eventPoint.dateTo);
+  const toTime = convertToTime(eventPoint.dateTo);
   const offersTemplate = createOffersTemplate(offersArray);
-  const eventDateTime = convertToEventDateTime(point.dateFrom);
+
   return `<li class="trip-events__item">
     <div class="event">
         <time class="event__date" datetime="${eventDateTime}">${eventDate}</time>
         <div class="event__type">
             <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
-        <h3 class="event__title">${randomDestinations.getDestination(destination).name}</h3>
+        <h3 class="event__title">${destination.name}</h3>
         <div class="event__schedule">
             <p class="event__time">
-                <time class="event__start-time" datetime=${eventStartDateTime}>${eventStartTime}</time>
+                <time class="event__start-time" datetime="${fromDateTime}">${fromTime}</time>
                     &mdash;
-                <time class="event__end-time" datetime="${eventEndDateTime}">${eventEndTime}</time>
+                <time class="event__end-time" datetime="${toDateTime}">${toTime}</time>
             </p>
         </div>
         <p class="event__price">
-        &euro;&nbsp;<span class="event__price-value">${eventPrice}</span>
+        &euro;&nbsp;<span class="event__price-value">${eventPoint.basePrice}</span>
         </p>
         <h4 class="visually-hidden">Offers:</h4>
         <ul class="event__selected-offers">
@@ -51,14 +58,30 @@ const createTripEventTemplate = (point) => {
     </div>
   </li>`;
 };
+
+
 class TripEventView extends AbstractView {
-  constructor({tripPoint}) {
+  #destinations;
+  #offers;
+  #tripEvent;
+
+  constructor({tripEvent, onRollupClick, destinations, offers}) {
     super();
-    this.tripPoint = tripPoint;
+    this.#tripEvent = tripEvent;
+    this.#offers = offers;
+    this.#destinations = destinations;
+    this._callback.onRollupClick = onRollupClick;
+
+    this.element.querySelector('.event__rollup-btn',).addEventListener('click', this.#rollupHandler);
   }
 
+  #rollupHandler = (event) => {
+    event.preventDefault();
+    this._callback.onRollupClick();
+  };
+
   get template() {
-    return createTripEventTemplate(this.tripPoint);
+    return createTripEventTemplate(this.#tripEvent, this.#destinations, this.#offers);
   }
 }
 
