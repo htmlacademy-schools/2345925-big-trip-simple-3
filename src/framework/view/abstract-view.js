@@ -75,6 +75,8 @@ export default class AbstractView {
       callback?.();
     }, SHAKE_ANIMATION_TIMEOUT);
   }
+
+
 }
 
 /**

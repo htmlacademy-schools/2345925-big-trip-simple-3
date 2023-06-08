@@ -1,25 +1,24 @@
 import AbstractView from '../framework/view/abstract-view';
-import {SortType} from '../utils/trip-points';
+import {SortType} from '../utils/const';
 
-
-const createTripSortingBlock = (name) => (
+const createTripSortingBlock = (sortName) => (
   `
-    <div class="trip-sort__item  trip-sort__item--${name.toLowerCase()}">
+    <div class="trip-sort__item  trip-sort__item--${sortName.toLowerCase()}">
       <input
-        id="sort-${name.toLowerCase()}"
+        id="sort-${sortName.toLowerCase()}"
         class="trip-sort__input visually-hidden"
         type="radio" name="trip-sort"
-        value="sort-${name.toLowerCase()}"
-        ${name === SortType.DAY ? 'checked' : ''}
+        value="sort-${sortName.toLowerCase()}"
+        ${sortName === SortType.DAY ? 'checked' : ''}
       >
-      <label class="trip-sort__btn" for="sort-${name.toLowerCase()}" data-sort-type="${name}">${name}</label>
+      <label class="trip-sort__btn" for="sort-${sortName.toLowerCase()}" data-sort-type="${sortName}">${sortName}</label>
     </div>`
 );
 
 
 const createTripEventsSortingTemplate = (sorts) => `
   <form class="trip-events__trip-sort  trip-sort" action="#" method="get">
-    ${sorts.map((sort) => createTripSortingBlock(sort)).join('')}
+    ${Object.keys(sorts).map((sort) => createTripSortingBlock(sort)).join('')}
   </form>
 `;
 
