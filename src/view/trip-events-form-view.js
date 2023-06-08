@@ -191,6 +191,7 @@ class TripEventFormView extends AbstractStatefulView {
   };
 
   #eventTypeHandler = (evt) => {
+    console.log('event')
     evt.preventDefault();
     this.updateElement({
       type: evt.target.value,

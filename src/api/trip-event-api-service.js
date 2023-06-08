@@ -57,3 +57,4 @@ export class TripEventApiService extends ApiService {
     return adaptedTripEvent;
   };
 }
+

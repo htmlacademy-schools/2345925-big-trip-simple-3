@@ -9,7 +9,7 @@ export default class CreateTripEventPresenter {
 
   #handleChange;
   #handelDestroy;
-  constructor({tripEventsListContainer, onChange, onDestroy}) {
+  constructor({tripEventsListContainer, onChange, onDestroy = () => {}}) {
     this.#tripEventsListContainer = tripEventsListContainer;
     this.#handleChange = onChange;
     this.#handelDestroy = onDestroy;
@@ -24,7 +24,8 @@ export default class CreateTripEventPresenter {
       destinations,
       offers,
       onSave: this.#onSubmit,
-      onDelete: this.#onDeleteClick
+      onDelete: this.#onDeleteClick,
+      onReset: this.#onDeleteClick
     });
 
     render(this.#tripEventsFormComponent, this.#tripEventsListContainer,

@@ -41,10 +41,18 @@ export class TripEventPresenter {
     this.#onDataChange = onDataChange;
   }
 
+  #replaceFormToEvent() {
+    replace(this.#tripEventComponent, this.#tripEventFormComponent);
+    document.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
+    this.#mode = Mode.DEFAULT;
+  }
+
   #closeEditFormOnEscapeKey(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      this.#replaceFormToEvent();
+      try {
+        this.#replaceFormToEvent();
+      } catch (Error) { /* empty */ }
     }
   }
 
@@ -53,12 +61,7 @@ export class TripEventPresenter {
     document.addEventListener('keydown', this.#closeEditFormOnEscapeKey);
     this.#handleModeChange();
     this.#mode = Mode.EDITING;
-  }
 
-  #replaceFormToEvent() {
-    replace(this.#tripEventComponent, this.#tripEventFormComponent);
-    document.removeEventListener('keydown', this.#closeEditFormOnEscapeKey);
-    this.#mode = Mode.DEFAULT;
   }
 
   #handleSave = (update) => {
@@ -129,8 +132,8 @@ export class TripEventPresenter {
       destinations: destinations,
       offers: offers,
       onRollupClick: () => {
-        this.#tripEventFormComponent.reset(this.#tripEvent);
         this.#replacePointToForm();
+        this.#tripEventFormComponent.reset(this.#tripEvent);
       }
     });
 

@@ -89,7 +89,7 @@ export default class TripPresenter {
     this.#createTripEventPresenter = new CreateTripEventPresenter({
       tripEventsListContainer: this.#tripContainer,
       onChange: this.#handleUserAction,
-      onDestroy: () => {}
+      // onDestroy: (c) => console.log(c)
     });
     this.#createTripEventPresenter.init({destinations: this.destinations, offers: this.offers});
   };
