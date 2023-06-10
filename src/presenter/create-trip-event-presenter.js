@@ -20,18 +20,22 @@ export default class CreateTripEventPresenter {
       return;
     }
 
-    this.#tripEventsFormComponent = new TripEventFormView({
-      destinations,
-      offers,
-      onSave: this.#onSubmit,
-      onDelete: this.#onDeleteClick,
-      onReset: this.#onDeleteClick
-    });
+    try {
+      this.#tripEventsFormComponent = new TripEventFormView({
+        destinations,
+        offers,
+        onSave: this.#onSubmit,
+        onDelete: this.#onDeleteClick,
+        onReset: this.#onDeleteClick
+      });
 
-    render(this.#tripEventsFormComponent, this.#tripEventsListContainer,
-      RenderPosition.AFTERBEGIN);
+      render(this.#tripEventsFormComponent, this.#tripEventsListContainer,
+        RenderPosition.AFTERBEGIN);
 
-    document.body.addEventListener('keydown', this.#ecsKeyHandler);
+      document.body.addEventListener('keydown', this.#ecsKeyHandler);
+    } catch (e) {
+      /* server issue */
+    }
   };
 
   setSaving() {
