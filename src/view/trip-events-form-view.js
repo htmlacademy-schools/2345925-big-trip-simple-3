@@ -254,9 +254,11 @@ class TripEventFormView extends AbstractStatefulView {
 
   #destinationHandler = (evt) => {
     evt.preventDefault();
-    this.updateElement({
-      destination: this.#destinations.find((destination) => destination.name === evt.target.value).id,
-    });
+    try {
+      this.updateElement({
+        destination: this.#destinations.find((destination) => destination.name === evt.target.value).id,
+      });
+    } catch(err){ /* empty */ }
   };
 
   #deleteHandler = (e) => {
