@@ -165,6 +165,7 @@ export class TripEventPresenter {
     );
   };
 
+
   #handleDeleteClick = (update) => {
     this.#onDataChange(
       UserAction.DELETE_EVENT,

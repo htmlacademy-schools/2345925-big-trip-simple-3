@@ -11,7 +11,6 @@ export default class OfferModel extends Observable {
   }
 
   get offers() {
-    //console.log(this.#offers);
     return this.#offers;
   }
 
